@@ -8,13 +8,15 @@
 
 #import "SEGAppDelegate.h"
 #import <Analytics/SEGAnalytics.h>
-
+#import <Analytics-Mixpanel/SEGMixpanelIntegrationFactory.h>
 
 @implementation SEGAppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    [SEGAnalytics setupWithConfiguration:[SEGAnalyticsConfiguration configurationWithWriteKey:@"MlTmISmburwl2nN9o3NFpGfElujcfb0q"]];
+    SEGAnalyticsConfiguration *configuration = [SEGAnalyticsConfiguration configurationWithWriteKey:@"MlTmISmburwl2nN9o3NFpGfElujcfb0q"];
+    [configuration use:[SEGMixpanelIntegrationFactory instance]];
+    [SEGAnalytics setupWithConfiguration:configuration];
     [SEGAnalytics debug:YES];
 
     [[SEGAnalytics sharedAnalytics] track:@"Hello World"];

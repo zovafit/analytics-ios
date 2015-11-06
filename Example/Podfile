@@ -3,6 +3,7 @@ use_frameworks!
 
 target 'Analytics_Example', :exclusive => true do
   pod "Analytics", :path => "../"
+  pod "Analytics-Mixpanel", :path => "../../../segment-integrations/analytics-ios-integration-mixpanel"
 end
 
 target 'Analytics_Tests', :exclusive => true do
