@@ -26,6 +26,9 @@ NSString *const SEGSegmentRequestDidFailNotification = @"SegmentRequestDidFail";
 NSString *const SEGAdvertisingClassIdentifier = @"ASIdentifierManager";
 NSString *const SEGADClientClass = @"ADClient";
 
+NSString *const SEGUserIdKey = @"SEGUserId";
+NSString *const SEGAnonymousIdKey = @"SEGAnonymousId";
+
 static NSString *GenerateUUIDString()
 {
     CFUUIDRef theUUID = CFUUIDCreate(NULL);
@@ -84,7 +87,7 @@ static BOOL GetAdTrackingEnabled()
         self.configuration = [analytics configuration];
         self.apiURL = [NSURL URLWithString:@"https://api.segment.io/v1/import"];
         self.anonymousId = [self getAnonymousId:NO];
-        self.userId = [[NSString alloc] initWithContentsOfURL:self.userIDURL encoding:NSUTF8StringEncoding error:NULL];
+        self.userId = [self getUserId];
         self.bluetooth = [[SEGBluetooth alloc] init];
         self.reachability = [SEGReachability reachabilityWithHostname:@"http://google.com"];
         [self.reachability startNotifier];
@@ -252,6 +255,7 @@ static BOOL GetAdTrackingEnabled()
 {
     [self dispatchBackground:^{
         self.userId = userId;
+        [[NSUserDefaults standardUserDefaults] setValue:userId forKey:SEGUserIdKey];
         [self.userId writeToURL:self.userIDURL atomically:YES encoding:NSUTF8StringEncoding error:NULL];
     }];
 }
@@ -260,6 +264,7 @@ static BOOL GetAdTrackingEnabled()
 {
     [self dispatchBackground:^{
         self.anonymousId = anonymousId;
+        [[NSUserDefaults standardUserDefaults] setValue:anonymousId forKey:SEGAnonymousIdKey];
         [self.anonymousId writeToURL:self.anonymousIDURL atomically:YES encoding:NSUTF8StringEncoding error:NULL];
     }];
 }
@@ -459,6 +464,8 @@ static BOOL GetAdTrackingEnabled()
 - (void)reset
 {
     [self dispatchBackgroundAndWait:^{
+        [[NSUserDefaults standardUserDefaults] setValue:nil forKey:SEGUserIdKey];
+        [[NSUserDefaults standardUserDefaults] setValue:nil forKey:SEGAnonymousIdKey];
         [[NSFileManager defaultManager] removeItemAtURL:self.userIDURL error:NULL];
         [[NSFileManager defaultManager] removeItemAtURL:self.traitsURL error:NULL];
         [[NSFileManager defaultManager] removeItemAtURL:self.queueURL error:NULL];
@@ -574,13 +581,17 @@ static BOOL GetAdTrackingEnabled()
     // identifierForVendor (iOS6 and later, can't be changed on logout),
     // or MAC address (blocked in iOS 7). For more info see https://segment.io/libraries/ios#ids
     NSURL *url = self.anonymousIDURL;
-    NSString *anonymousId = [[NSString alloc] initWithContentsOfURL:url encoding:NSUTF8StringEncoding error:NULL];
+    NSString *anonymousId = [[NSUserDefaults standardUserDefaults] valueForKey:SEGAnonymousIdKey] ?: [[NSString alloc] initWithContentsOfURL:url encoding:NSUTF8StringEncoding error:NULL];
     if (!anonymousId || reset) {
         anonymousId = GenerateUUIDString();
         SEGLog(@"New anonymousId: %@", anonymousId);
         [anonymousId writeToURL:url atomically:YES encoding:NSUTF8StringEncoding error:NULL];
     }
     return anonymousId;
+}
+
+- (NSString *)getUserId {
+    return [[NSUserDefaults standardUserDefaults] valueForKey:SEGUserIdKey] ?: [[NSString alloc] initWithContentsOfURL:self.userIDURL encoding:NSUTF8StringEncoding error:NULL];
 }
 
 @end
